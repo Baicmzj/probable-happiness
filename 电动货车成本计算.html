@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>短途电动货车月度成本测算工具（单次≤100km）</title>
+    <script src="https://cdn.bootcdn.net/ajax/libs/echarts/5.4.3/echarts.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: "Microsoft YaHei", sans-serif;
+        }
+        .container {
+            width: 90%;
+            max-width: 1200px;
+            margin: 30px auto;
+            display: flex;
+            gap: 30px;
+        }
+        h1 {
+            text-align: center;
+            color: #2c3e50;
+            margin: 20px 0;
+        }
+        .input-area {
+            flex: 1;
+            padding: 20px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            background-color: #f9f9f9;
+        }
+        .result-area {
+            flex: 2;
+            padding: 20px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            background-color: #f9f9f9;
+        }
+        .form-group {
+            margin: 15px 0;
+        }
+        label {
+            display: block;
+            margin-bottom: 6px;
+            color: #34495e;
+            font-weight: bold;
+        }
+        input {
+            width: 100%;
+            padding: 8px 10px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+        button {
+            width: 100%;
+            padding: 12px;
+            background-color: #27ae60;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            font-size: 16px;
+            cursor: pointer;
+            margin-top: 10px;
+        }
+        button:hover {
+            background-color: #219653;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+        }
+        th, td {
+            border: 1px solid #ccc;
+            padding: 12px;
+            text-align: center;
+            color: #2c3e50;
+        }
+        th {
+            background-color: #e9ecef;
+        }
+        #chartArea {
+            width: 100%;
+            height: 300px;
+            margin-top: 20px;
+        }
+        .note {
+            margin-top: 20px;
+            padding: 10px;
+            background-color: #e3f2fd;
+            border-radius: 4px;
+            font-size: 14px;
+            color: #1976d2;
+        }
+        .sub-title {
+            font-size: 14px;
+            color: #7f8c8d;
+            margin-top: 20px;
+            margin-bottom: 10px;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <h1>短途电动货车月度成本测算工具（单次≤100km）</h1>
+    <div class="container">
+        <!-- 输入区 -->
+        <div class="input-area">
+            <h3 style="color: #2c3e50; margin-bottom: 15px;">基础参数输入</h3>
+            <div class="form-group">
+                <label>车辆购置价（元）</label>
+                <input type="number" id="carPrice" value="180000" min="100000" max="300000">
+            </div>
+            <div class="form-group">
+                <label>使用年限（年）</label>
+                <input type="number" id="useYears" value="5" min="3" max="8">
+            </div>
+            <div class="form-group">
+                <label>月度运营天数（天）</label>
+                <input type="number" id="monthlyDays" value="22" min="20" max="30">
+            </div>
+            <div class="form-group">
+                <label>日均行程（km）</label>
+                <input type="number" id="dailyMileage" value="80" min="10" max="100">
+            </div>
+            <div class="form-group">
+                <label>额定装载重量（吨）</label>
+                <input type="number" id="ratedLoad" value="5" min="2" max="10">
+            </div>
+            <div class="form-group">
+                <label>平均装载率（%）</label>
+                <input type="number" id="loadRate" value="75" min="50" max="100">
+            </div>
+            <div class="form-group">
+                <label>百公里电耗（度）</label>
+                <input type="number" id="hundredKmPower" value="25" min="15" max="40">
+            </div>
+            <div class="form-group">
+                <label>电价（元/度）</label>
+                <input type="number" id="electricPrice" value="0.8" step="0.01" min="0.5" max="1.2">
+            </div>
+
+            <div class="sub-title">新增成本参数</div>
+            <div class="form-group">
+                <label>司机月度工资（元）</label>
+                <input type="number" id="driverSalary" value="5000" min="3000" max="10000">
+            </div>
+            <div class="form-group">
+                <label>电池初始成本（元）</label>
+                <input type="number" id="batteryCost" value="72000" min="30000" max="120000">
+            </div>
+            <div class="form-group">
+                <label>电池循环寿命（次）</label>
+                <input type="number" id="batteryCycle" value="1500" min="1000" max="3000">
+            </div>
+            <div class="form-group">
+                <label>月度充电次数</label>
+                <input type="number" id="monthlyCharge" value="44" min="20" max="100">
+            </div>
+            
+            <button onclick="calculateCost()">开始测算</button>
+
+            <div class="note">
+                说明：默认参数适配短途城配场景，可根据实际运营数据调整；电池成本按循环寿命均摊
+            </div>
+        </div>
+
+        <!-- 结果区 -->
+        <div class="result-area">
+            <h3 style="color: #2c3e50; margin-bottom: 15px;">月度成本测算结果</h3>
+            <table>
+                <thead>
+                    <tr>
+                        <th>成本类型</th>
+                        <th>金额（元）</th>
+                        <th>计算依据</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>月度固定成本</td>
+                        <td id="fixedCost">-</td>
+                        <td>折旧+保险+管理费+司机工资</td>
+                    </tr>
+                    <tr>
+                        <td>月度变动成本</td>
+                        <td id="variableCost">-</td>
+                        <td>电费+轮胎损耗+维修费+电池衰减</td>
+                    </tr>
+                    <tr>
+                        <td>月度总成本</td>
+                        <td id="totalCost">-</td>
+                        <td>固定成本+变动成本</td>
+                    </tr>
+                    <tr>
+                        <td>每吨公里单位成本</td>
+                        <td id="unitCost">-</td>
+                        <td>总成本÷总吨公里</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <div id="chartArea"></div>
+
+            <div class="note">
+                测算假设：① 车辆残值率5% ② 年度保险4800元、管理费2400元 ③ 轮胎单价800元/条，寿命5万公里 ④ 单位里程维修费0.3元/km
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 成本计算核心函数
+        function calculateCost() {
+            // 获取输入参数
+            const carPrice = parseFloat(document.getElementById('carPrice').value);
+            const useYears = parseFloat(document.getElementById('useYears').value);
+            const monthlyDays = parseFloat(document.getElementById('monthlyDays').value);
+            const dailyMileage = parseFloat(document.getElementById('dailyMileage').value);
+            const ratedLoad = parseFloat(document.getElementById('ratedLoad').value);
+            const loadRate = parseFloat(document.getElementById('loadRate').value) / 100;
+            const hundredKmPower = parseFloat(document.getElementById('hundredKmPower').value);
+            const electricPrice = parseFloat(document.getElementById('electricPrice').value);
+            // 新增参数
+            const driverSalary = parseFloat(document.getElementById('driverSalary').value);
+            const batteryCost = parseFloat(document.getElementById('batteryCost').value);
+            const batteryCycle = parseFloat(document.getElementById('batteryCycle').value);
+            const monthlyCharge = parseFloat(document.getElementById('monthlyCharge').value);
+
+            // 固定假设参数
+            const residualRate = 0.05; // 车辆残值率
+            const annualInsurance = 4800; // 年度保险费
+            const annualManagement = 2400; // 年度管理费
+            const tirePrice = 800; // 单条轮胎价格
+            const tireLife = 50000; // 轮胎寿命（km）
+            const repairPerKm = 0.3; // 单位里程维修费
+
+            // 计算核心指标
+            const monthlyMileage = monthlyDays * dailyMileage; // 月度总里程
+            const residualValue = carPrice * residualRate; // 车辆残值
+            // 车辆折旧（扣除电池成本，单独核算电池衰减）
+            const carBodyCost = carPrice - batteryCost;
+            const monthlyCarDepreciation = (carBodyCost - carBodyCost * residualRate) / (useYears * 12);
+            const monthlyInsurance = annualInsurance / 12; // 月度保险
+            const monthlyManagement = annualManagement / 12; // 月度管理费
+            // 固定成本新增司机工资
+            const fixedCost = monthlyCarDepreciation + monthlyInsurance + monthlyManagement + driverSalary;
+
+            // 变动成本计算
+            const monthlyPower = (monthlyMileage / 100) * hundredKmPower; // 月度总电耗
+            const monthlyElectricCost = monthlyPower * electricPrice; // 月度电费
+            const monthlyTireCost = (tirePrice * 6 / tireLife) * monthlyMileage; // 月度轮胎损耗
+            const monthlyRepairCost = monthlyMileage * repairPerKm; // 月度维修费
+            // 新增电池衰减成本：按循环寿命均摊，每次充电衰减一次
+            const batteryPerCycleCost = batteryCost / batteryCycle;
+            const monthlyBatteryAttenuation = batteryPerCycleCost * monthlyCharge;
+            // 变动成本整合电池衰减
+            const variableCost = monthlyElectricCost + monthlyTireCost + monthlyRepairCost + monthlyBatteryAttenuation;
+
+            // 总成本及单位成本
+            const totalCost = fixedCost + variableCost;
+            const totalTonKm = monthlyMileage * ratedLoad * loadRate; // 月度总吨公里
+            const unitCost = totalCost / totalTonKm; // 每吨公里单位成本
+
+            // 赋值到结果表格
+            document.getElementById('fixedCost').textContent = fixedCost.toFixed(2);
+            document.getElementById('variableCost').textContent = variableCost.toFixed(2);
+            document.getElementById('totalCost').textContent = totalCost.toFixed(2);
+            document.getElementById('unitCost').textContent = unitCost.toFixed(4);
+
+            // 绘制成本占比柱状图
+            drawChart(fixedCost, variableCost);
+        }
+
+        // 绘制柱状图函数
+        function drawChart(fixed, variable) {
+            const chartDom = document.getElementById('chartArea');
+            const myChart = echarts.init(chartDom);
+            const option = {
+                title: { text: '月度成本构成占比', left: 'center' },
+                tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' } },
+                xAxis: { type: 'category', data: ['固定成本', '变动成本'] },
+                yAxis: { type: 'value', name: '金额（元）' },
+                series: [{
+                    name: '成本金额',
+                    type: 'bar',
+                    data: [fixed.toFixed(2), variable.toFixed(2)],
+                    itemStyle: { color: ['#27ae60', '#f39c12'] },
+                    barWidth: '40%'
+                }]
+            };
+            myChart.setOption(option);
+            window.addEventListener('resize', () => myChart.resize());
+        }
+
+        // 页面加载完成后默认计算一次
+        window.onload = function() {
+            calculateCost();
+        }
+    </script>
+</body>
+</html>
